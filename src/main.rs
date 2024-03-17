@@ -1,12 +1,11 @@
 use axum::{
-    http::StatusCode,
-    response::IntoResponse,
     routing::get,
-    Json, Router,
+    Router,
 };
-use maud::{html, Markup};
-use serde::Serialize;
+use tower_http::services::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use quercus::welcome::welcome;
+
 
 #[tokio::main]
 async fn main() {
@@ -22,7 +21,8 @@ async fn main() {
         .init();
 
     let app = Router::new()
-        .route("/", get(root));
+        .route("/", get(welcome))
+        .nest_service("/assets", ServeDir::new("assets"));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
@@ -30,11 +30,3 @@ async fn main() {
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 }
-
-// basic handler that responds with a static string
-async fn root() -> Markup {
-    html! {
-        h1 { "hello world" }
-    }
-}
-

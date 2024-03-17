@@ -1,0 +1,15 @@
+{
+  "name": "quercus",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "tw": "tailwindcss -i ./src/input.css -o ./assets/style.css",
+    "tw:watch": "tailwindcss -i ./src/input.css -o ./assets/style.css --watch"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tailwindcss": "^3.4.1"
+  }
+}
