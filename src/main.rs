@@ -2,9 +2,9 @@ use axum::{
     routing::get,
     Router,
 };
+use quercus::ui::home::welcome;
 use tower_http::services::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use quercus::welcome::welcome;
 
 
 #[tokio::main]

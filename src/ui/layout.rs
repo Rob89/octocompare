@@ -1,11 +1,5 @@
 use maud::{html, Markup, DOCTYPE};
 
-pub async fn welcome() -> Markup {
-    page("Welcome", html! {
-        h1 { "hello world" }
-    })
-}
-
 pub fn page(title: &str, content: Markup) -> Markup {
     /// A basic header with a dynamic `page_title`.
     pub(crate) fn head(page_title: &str) -> Markup {
@@ -23,15 +17,18 @@ pub fn page(title: &str, content: Markup) -> Markup {
 
     pub(crate) fn header() -> Markup {
         html! {
-            header ."container py-5 flex flex-row place-content-center gap-6 items-center" {
-                    div { "Quercus" }
+            header ."container"."py-5"."flex"."flex-row"."place-content-center"."gap-6"."items-center"."border-b-2"."border-indigo-500" {
+                    p."text-2xl"."drop-shadow-md" { 
+                        strong.font-bold.text-black."dark:text-white" { "Octo" } 
+                        span { "Compare" } 
+                    }
             }
         }
     }
 
     html! {
         (head(title))
-        body ."container relative mx-auto !block" style="display: none" {
+        body .antialiased."text-slate-500"."dark:text-slate-400".bg-white."dark:bg-slate-900" {
             (header())
 
             main ."container" {
@@ -40,4 +37,3 @@ pub fn page(title: &str, content: Markup) -> Markup {
         }
     }
 }
-
