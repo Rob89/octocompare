@@ -19,7 +19,7 @@ pub fn page(title: &str, content: Markup) -> Markup {
         html! {
             header ."py-5"."flex"."flex-row"."place-content-center"."items-center"."border-b-2"."border-indigo-500" {
                     p."text-3xl"."drop-shadow-md" { 
-                        strong.font-bold.text-black."dark:text-white" { "Octo" } 
+                        strong.font-bold."text-white" { "Octo" } 
                         span { "Compare" } 
                     }
             }
@@ -28,7 +28,7 @@ pub fn page(title: &str, content: Markup) -> Markup {
 
     html! {
         (head(title))
-        body .antialiased."text-slate-500"."dark:text-slate-400".bg-white."dark:bg-slate-900" {
+        body .antialiased."text-slate-400"."bg-slate-900" {
             (header())
 
             main ."container"."mx-auto"."mt-2" {
