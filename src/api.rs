@@ -2,6 +2,7 @@ use anyhow::{bail, Result};
 use base64::prelude::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
 // {"consumption":0.0,"interval_start":"2024-01-16T23:00:00Z","interval_end":"2024-01-16T23:30:00Z"}
 #[derive(Debug, Deserialize, Serialize)]
@@ -78,7 +79,9 @@ pub async fn get_account_details(api_key: &str, account_number: &str) -> Result<
         .await?;
 
     if body.status().as_u16() != 200 {
-        bail!("Response failed: {}", body.text().await?);
+        let resp = body.text().await?;
+        error!("Response failed: {}", resp);
+        bail!("Unexpected error from API. Check account details and try again.");
     } else {
         Ok(body.json::<AccountResponse>().await?)
     }

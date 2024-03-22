@@ -7,7 +7,7 @@ use axum::{
 };
 
 use maud::Markup;
-use quercus::{
+use octocompare::{
     api::{get_account_details, AccountProperty, AccountResponse},
     ui::home::{account_details, welcome},
 };
@@ -22,7 +22,7 @@ async fn main() {
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
                 // axum logs rejections from built-in extractors with the `axum::rejection`
                 // target, at `TRACE` level. `axum::rejection=trace` enables showing those events
-                "quercus=debug,axum::rejection=trace".into()
+                "octocompare=debug,axum::rejection=trace".into()
             }),
         )
         .with(tracing_subscriber::fmt::layer())
