@@ -38,3 +38,15 @@ pub fn page(title: &str, content: Markup) -> Markup {
         }
     }
 }
+
+pub(crate) fn heading1(content: &str) -> Markup {
+    html! {
+        h1."text-2xl".font-bold."text-white" { (content) }
+    }
+}
+
+pub(crate) fn heading2(content: &str) -> Markup {
+    html! {
+        h2."text-xl".font-bold."text-white" { (content) }
+    }
+}

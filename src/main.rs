@@ -56,7 +56,11 @@ async fn post_get_account(Form(details): Form<AccountDetails>) -> Result<Markup,
         .filter(|p| p.moved_in_at < chrono::offset::Utc::now() && p.moved_out_at == None)
         .collect::<Vec<&AccountProperty>>();
 
-    Ok(account_details(active_properties))
+    Ok(account_details(
+        active_properties,
+        &details.api_key,
+        &details.account_number,
+    ))
 }
 
 // Make our own error that wraps `anyhow::Error`.
