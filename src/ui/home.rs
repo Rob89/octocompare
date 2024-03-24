@@ -1,4 +1,7 @@
-use crate::{api::AccountProperty, ui::layout::heading1, ui::layout::heading2, ui::layout::page};
+use crate::{
+    api::AccountProperty,
+    ui::layout::{heading1, heading2, page, post_button},
+};
 use maud::{html, Markup};
 
 pub async fn welcome() -> Markup {
@@ -19,11 +22,7 @@ pub async fn welcome() -> Markup {
                         label for="api_key" ."w-32"."inline-block"."mr-2" { "Api key" }
                         input name="api_key" #"api_key" placeholder="sk_live_AAa4a" ."rounded"."mt-2"."text-slate-800" {}
                     }
-
-                    button hx-post="/account-details"
-                        hx-trigger="click"
-                        hx-target="#property-result"
-                        type="buttton" ."ml-auto"."text-white"."focus:ring-4"."font-medium"."rounded-lg"."text-sm"."px-2.5"."py-1"."me-4"."mb-2"."bg-blue-600"."hover:bg-blue-700"."focus:outline-none"."focus:ring-blue-800"."mt-4" { "Let's go!" }
+                    (post_button("/account-details", "#property-result", "let's go!"))
                 }
             }
             div #"property-result" ."mt-4" {
@@ -38,6 +37,7 @@ pub fn account_details(
     api_key: &str,
     account_number: &str,
 ) -> Markup {
+    let first_property = active_properties.iter().next();
     html!(
         (heading2("Active Properties"))
         form {
@@ -45,9 +45,14 @@ pub fn account_details(
             input name="account_number" type="hidden" value=(account_number) { }
 
             @for property in &active_properties {
-                input name="property_id" type="hidden" value=(property.id.to_string()) { }
-
-                h3 .font-bold.text-white."mt-2" { (property.address_line_1) ", " (property.postcode) }
+                @if first_property.unwrap().id == property.id {
+                    input #"property_id" name="property_id" type="radio" value=(property.id.to_string()) checked;
+                } @else {
+                    input #"property_id" name="property_id" type="radio" value=(property.id.to_string());
+                }
+                label for="property_id" .font-bold.text-white."mt-2"."ml-2" {
+                    (property.address_line_1) ", " (property.postcode)
+                }
                 div ."flex"."flex-row" {
                     div ."basis-1/2" ."border-indigo-500" ."border-e-2" ."px-4" ."py-2" {
                         p { "Electricity Meter Points"}
@@ -88,6 +93,10 @@ pub fn account_details(
                     }
                 }
             }
+            (post_button("/compare-tariffs", "#comparison-result", "compare some tariffs"))
+        }
+        div #"comparison-result" {
+
         }
     )
 }

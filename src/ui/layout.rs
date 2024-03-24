@@ -50,3 +50,17 @@ pub(crate) fn heading2(content: &str) -> Markup {
         h2."text-xl".font-bold."text-white" { (content) }
     }
 }
+
+pub(crate) fn post_button(post_to: &str, target: &str, content: &str) -> Markup {
+    html! {
+        button
+            hx-post=(post_to)
+            hx-trigger="click"
+            hx-target=(target)
+            type="buttton"
+            ."ml-auto"."text-white"."focus:ring-4"."font-medium"."rounded-lg"."text-sm"."px-2.5"."py-1"."me-4"."mb-2"
+            ."bg-blue-600"."hover:bg-blue-700"."focus:outline-none"."focus:ring-blue-800"."mt-4" {
+                (content)
+            }
+    }
+}

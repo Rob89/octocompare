@@ -6,13 +6,14 @@ use axum::{
     Form, Router,
 };
 
-use maud::Markup;
+use maud::{html, Markup};
 use octocompare::{
-    api::{get_account_details, AccountProperty, AccountResponse},
+    api::{get_account_details, get_consumption_data, AccountProperty, AccountResponse, MeterInfo},
     ui::home::{account_details, welcome},
 };
 use serde::Deserialize;
 use tower_http::services::ServeDir;
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -31,6 +32,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(welcome))
         .route("/account-details", post(post_get_account))
+        .route("/compare-tariffs", post(post_compare_tariffs))
         .nest_service("/assets", ServeDir::new("assets"));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -63,6 +65,46 @@ async fn post_get_account(Form(details): Form<AccountDetails>) -> Result<Markup,
     ))
 }
 
+#[derive(Deserialize)]
+struct CompareTariffRequest {
+    api_key: String,
+    account_number: String,
+    property_id: f64,
+}
+async fn post_compare_tariffs(
+    Form(details): Form<CompareTariffRequest>,
+) -> Result<Markup, AppError> {
+    let response: AccountResponse =
+        get_account_details(&details.api_key, &details.account_number).await?;
+
+    let property: Option<&AccountProperty> = response
+        .properties
+        .iter()
+        .filter(|p| p.id == details.property_id)
+        .next();
+
+    if let None = property {
+        return Ok(html! { p { "Hmmmm... This is embarrassing, we couldn't find that property." }});
+    }
+
+    let property = property.unwrap();
+
+    for emp in &property.electricity_meter_points {
+        info!("Processing {:?}", emp);
+        if !emp.is_export {
+            let _d = get_consumption_data(
+                &details.api_key,
+                MeterInfo::Electricity(emp.meters[0].serial_number.clone(), emp.mpan.clone()),
+            )
+            .await?;
+
+            info!("{:?}", _d)
+        }
+    }
+
+    Ok(html! { p { "TODO" }})
+}
+
 // Make our own error that wraps `anyhow::Error`.
 struct AppError(anyhow::Error);
 
@@ -70,8 +112,8 @@ struct AppError(anyhow::Error);
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Something went wrong: {}", self.0),
+            StatusCode::OK,
+            html!(p { "Something went wrong: " (self.0) }),
         )
             .into_response()
     }
