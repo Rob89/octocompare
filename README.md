@@ -10,3 +10,6 @@ Goal:
     - Tracker
  
 Idea being to determine whether historical usage patterns fit with agile pricing.
+
+
+Run with `RUST_LOG=debug cargo run` for detailed tracing.
