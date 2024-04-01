@@ -8,7 +8,10 @@ use axum::{
 
 use maud::{html, Markup};
 use octocompare::{
-    api::{get_account_details, get_consumption_data, AccountProperty, AccountResponse, MeterInfo},
+    api::{
+        get_account_details, get_consumption_data, get_pricing, AccountProperty, AccountResponse,
+        MeterInfo,
+    },
     ui::home::{account_details, welcome},
 };
 use serde::Deserialize;
@@ -90,7 +93,7 @@ async fn post_compare_tariffs(
     let property = property.unwrap();
 
     for emp in &property.electricity_meter_points {
-        info!("Processing {:?}", emp);
+        info!("Processing MPAN: {}", emp.mpan);
         if !emp.is_export {
             let _d = get_consumption_data(
                 &details.api_key,
@@ -98,7 +101,18 @@ async fn post_compare_tariffs(
             )
             .await?;
 
-            info!("{:?}", _d)
+            let agreement = emp
+                .agreements
+                .iter()
+                .filter(|a| {
+                    a.valid_from <= chrono::offset::Utc::now()
+                        && a.valid_to >= chrono::offset::Utc::now()
+                })
+                .next();
+
+            if let Some(agreement) = agreement {
+                let _pricing = get_pricing(&agreement.tariff_code).await?;
+            }
         }
     }
 
