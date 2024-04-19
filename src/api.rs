@@ -109,7 +109,7 @@ pub async fn get_consumption_data(
     api_key: &str,
     meter_info: MeterInfo,
 ) -> Result<ConsumptionResponse> {
-    let page_size = 1000; // 25000
+    let page_size = 25000; // 25000
     let uri = match meter_info {
         MeterInfo::Electricity(serial_number, mpan) => format!(
             "https://api.octopus.energy/v1/electricity-meter-points/{}/meters/{}/consumption?page_size={}",
@@ -259,7 +259,6 @@ pub async fn get_pricing(tariff_code: &str) -> Result<TariffPricing> {
 
     let r = su.await?;
 
-    info!("Wow, much response: {:?}", r);
     // r.append(&mut du.await?.results);
     // r.append(&mut nu.await?.results);
 

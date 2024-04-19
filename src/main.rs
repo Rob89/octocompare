@@ -15,6 +15,7 @@ use octocompare::{
     ui::home::{account_details, welcome},
 };
 use serde::Deserialize;
+use std::cmp::Ordering;
 use tower_http::services::ServeDir;
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -95,7 +96,7 @@ async fn post_compare_tariffs(
     for emp in &property.electricity_meter_points {
         info!("Processing MPAN: {}", emp.mpan);
         if !emp.is_export {
-            let _d = get_consumption_data(
+            let consumption_data = get_consumption_data(
                 &details.api_key,
                 MeterInfo::Electricity(emp.meters[0].serial_number.clone(), emp.mpan.clone()),
             )
@@ -111,12 +112,61 @@ async fn post_compare_tariffs(
                 .next();
 
             if let Some(agreement) = agreement {
-                let _pricing = get_pricing(&agreement.tariff_code).await?;
+                let price_info = get_pricing(&agreement.tariff_code).await?;
+
+                let mut total = 0.0;
+                let mut data_missing = false;
+                // Given that consumption and pricing date are both ordered, I could be a lot smarter about this and keep
+                // indexes into each array
+                for d in &consumption_data.results {
+                    let index = price_info.unit_charges.binary_search_by(|x| {
+                        if d.interval_start < x.valid_from {
+                            return Ordering::Less;
+                        }
+                        if let Some(end) = x.valid_to {
+                            if d.interval_start > end {
+                                return Ordering::Greater;
+                            }
+                            if end < d.interval_end {
+                                return Ordering::Less;
+                            }
+                        }
+                        return Ordering::Equal;
+                    });
+
+                    if let Ok(i) = index {
+                        total += price_info.unit_charges[i].value_inc_vat * d.consumption;
+                    } else {
+                        // TODO - Keep track of the earliest missing data instead for better message.
+                        data_missing = true;
+                    }
+                }
+                // Standing charges.
+                let info = format!(
+                    "Total price from {:?} to {:?} is £{:.2}{}",
+                    &consumption_data
+                        .results
+                        .iter()
+                        .map(|x| x.interval_start)
+                        .next(),
+                    &consumption_data
+                        .results
+                        .iter()
+                        .map(|x| x.interval_end)
+                        .next_back(),
+                    total / 100.0,
+                    if data_missing {
+                        " (pricing data does not cover the whole consumption period)"
+                    } else {
+                        ""
+                    }
+                );
+                return Ok(html! { p { (info) }});
             }
         }
     }
 
-    Ok(html! { p { "TODO" }})
+    Ok(html! { p { "No consumption or pricing data was found." }})
 }
 
 // Make our own error that wraps `anyhow::Error`.
