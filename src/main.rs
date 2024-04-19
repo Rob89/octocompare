@@ -6,6 +6,7 @@ use axum::{
     Form, Router,
 };
 
+use chrono::Days;
 use maud::{html, Markup};
 use octocompare::{
     api::{
@@ -114,8 +115,10 @@ async fn post_compare_tariffs(
             if let Some(agreement) = agreement {
                 let price_info = get_pricing(&agreement.tariff_code).await?;
 
-                let mut total = 0.0;
+                let mut total_unit = 0.0;
+                let mut total_standing = 0.0;
                 let mut data_missing = false;
+                let mut earliest_date: Option<chrono::DateTime<chrono::Utc>> = None;
                 // Given that consumption and pricing date are both ordered, I could be a lot smarter about this and keep
                 // indexes into each array
                 for d in &consumption_data.results {
@@ -135,26 +138,63 @@ async fn post_compare_tariffs(
                     });
 
                     if let Ok(i) = index {
-                        total += price_info.unit_charges[i].value_inc_vat * d.consumption;
+                        total_unit += price_info.unit_charges[i].value_inc_vat * d.consumption;
+                        earliest_date = Some(d.interval_start);
                     } else {
-                        // TODO - Keep track of the earliest missing data instead for better message.
                         data_missing = true;
                     }
                 }
-                // Standing charges.
+
+                if let Some(latest_date) = &consumption_data
+                    .results
+                    .iter()
+                    .map(|x| x.interval_end)
+                    .next()
+                {
+                    if let Some(mut working_date) = earliest_date {
+                        loop {
+                            if working_date.cmp(latest_date) == Ordering::Greater {
+                                break;
+                            }
+
+                            let index = price_info.standing_charges.binary_search_by(|x| {
+                                if working_date < x.valid_from {
+                                    return Ordering::Less;
+                                }
+                                if let Some(end) = x.valid_to {
+                                    if working_date > end {
+                                        return Ordering::Greater;
+                                    }
+                                    if end < working_date {
+                                        return Ordering::Less;
+                                    }
+                                }
+                                return Ordering::Equal;
+                            });
+
+                            if let Ok(i) = index {
+                                total_standing += price_info.standing_charges[i].value_inc_vat;
+                            }
+
+                            working_date = working_date.checked_add_days(Days::new(1)).unwrap();
+                        }
+                    }
+                }
+
                 let info = format!(
-                    "Total price from {:?} to {:?} is £{:.2}{}",
+                    "Total price from {:?} to {:?} is £{:.2} for consumption and £{:.2} in standing charges{}",
+                    match earliest_date {
+                        Some(x) => x.to_string(),
+                        None => "unknown".to_string(),
+                    },
                     &consumption_data
                         .results
                         .iter()
-                        .map(|x| x.interval_start)
-                        .next(),
-                    &consumption_data
-                        .results
-                        .iter()
-                        .map(|x| x.interval_end)
-                        .next_back(),
-                    total / 100.0,
+                        .map(|x| x.interval_end.to_string())
+                        .next_back()
+                        .unwrap_or("unknown".to_string()),
+                    total_unit / 100.0,
+                    total_standing / 100.0,
                     if data_missing {
                         " (pricing data does not cover the whole consumption period)"
                     } else {
