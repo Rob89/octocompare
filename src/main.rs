@@ -191,7 +191,7 @@ async fn post_compare_tariffs(
                         .results
                         .iter()
                         .map(|x| x.interval_end.to_string())
-                        .next_back()
+                        .next()
                         .unwrap_or("unknown".to_string()),
                     total_unit / 100.0,
                     total_standing / 100.0,
